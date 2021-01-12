@@ -1,66 +1,66 @@
-import os
-import librosa
-import math
 import json
+import os
+import math
+import librosa
 
 DATASET_PATH = "genres_original"
-JSON_PATH = "data.json"
-
+JSON_PATH = "data_10.json"
 SAMPLE_RATE = 22050
-DURATION = 30 # in seconds
-SAMPLES_PER_TRACK = SAMPLE_RATE * DURATION
+TRACK_DURATION = 30  # measured in seconds
+SAMPLES_PER_TRACK = SAMPLE_RATE * TRACK_DURATION
 
-def save_mfcc(dataset_path, json_path, n_mfcc=13, n_fft=2048, hop_length=512, num_segments=5):
 
-    # dictionary to store data
+def save_mfcc(dataset_path, json_path, num_mfcc=13, n_fft=2048, hop_length=512, num_segments=5):
+
+    # dictionary to store mapping, labels, and MFCCs
     data = {
         "mapping": [],
-        "mfcc": [],
-        "labels": []
+        "labels": [],
+        "mfcc": []
     }
 
-    num_samples_per_segment = int(SAMPLES_PER_TRACK / num_segments)
-    expected_num_mfcc_vectors_per_segment = math.ceil(num_samples_per_segment / hop_length) # 1.2 -> 2
+    samples_per_segment = int(SAMPLES_PER_TRACK / num_segments)
+    num_mfcc_vectors_per_segment = math.ceil(samples_per_segment / hop_length)
 
-    # loop through all the genres
+    # loop through all genre sub-folder
     for i, (dirpath, dirnames, filenames) in enumerate(os.walk(dataset_path)):
 
-        # ensure that we're not at the root level
+        # ensure we're processing a genre sub-folder level
         if dirpath is not dataset_path:
 
-            # save the semantic label
-            dirpath_components = dirpath.split("/")
-            semantic_label = dirpath_components[-1]
+            # save genre label (i.e., sub-folder name) in the mapping
+            semantic_label = dirpath.split("/")[-1]
             data["mapping"].append(semantic_label)
-            print("\nProcessing {}".format(semantic_label))
+            print("\nProcessing: {}".format(semantic_label))
 
-            # process files for a specific genre
+            # process all audio files in genre sub-dir
             for f in filenames:
 
                 # load audio file
                 file_path = os.path.join(dirpath, f)
-                signal, sr = librosa.load(file_path, sr=SAMPLE_RATE)
+                signal, sample_rate = librosa.load(file_path, sr=SAMPLE_RATE)
 
-                # process segments extracting mfcc and storing data
-                for s in range(num_segments):
-                    start_sample = num_samples_per_segment * s # s=0 -> 0
-                    finish_sample = start_sample + num_samples_per_segment # s=0 -> num_samples_per_segment
+                # process all segments of audio file
+                for d in range(num_segments):
 
-                    mfcc = librosa.feature.mfcc(signal[start_sample:finish_sample],
-                                                sr=sr,
-                                                n_fft=n_fft,
-                                                n_mfcc=n_mfcc,
+                    # calculate start and finish sample for current segment
+                    start = samples_per_segment * d
+                    finish = start + samples_per_segment
+
+                    # extract mfcc
+                    mfcc = librosa.feature.mfcc(signal[start:finish], sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
                                                 hop_length=hop_length)
+                    mfcc = mfcc.T
 
-                    # store mfcc for segment if it has the expected length
-                    if len(mfcc) == expected_num_mfcc_vectors_per_segment:
+                    # store only mfcc feature with expected number of vectors
+                    if len(mfcc) == num_mfcc_vectors_per_segment:
                         data["mfcc"].append(mfcc.tolist())
-                        data["labels"].append(i-1)
-                        print("{}, segment:{}".format(file_path, s))
+                        data["labels"].append(i - 1)
+                        print("{}, segment:{}".format(file_path, d + 1))
 
-
+    # save MFCCs to json file
     with open(json_path, "w") as fp:
-            json.dump(data, fp, indent=4)
+        json.dump(data, fp, indent=4)
 
 
 if __name__ == "__main__":

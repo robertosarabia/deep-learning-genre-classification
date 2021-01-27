@@ -33,12 +33,22 @@ if __name__ == "__main__":
         keras.layers.Dense(512, activation="relu"),
         # second hidden layer
         keras.layers.Dense(256, activation="relu"),
-        #third hidden layer
+        # third hidden layer
         keras.layers.Dense(64, activation="relu"),
         # output layer
         keras.layers.Dense(10, activation="softmax")
     ])
 
     # compile network
+    optimizer = keras.optimizers.Adam(learning_rate=0.0001)
+    model.compile(optimizer=optimizer,
+                  loss="sparse_categorical_crossentropy",
+                  metrics=["accuracy"])
+
+    model.summary()
 
     # train network
+    model.fit(inputs_train, targets_train,
+              validation_data=(inputs_test, targets_test),
+              epochs=50,
+              batch_size=32)

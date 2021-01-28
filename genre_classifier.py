@@ -46,7 +46,7 @@ if __name__ == "__main__":
                                                                               targets,
                                                                               test_size=0.3)
 
-    # build the network architecture
+    # build the network architecture with dropout
     model = keras.Sequential([
         # input layer
         keras.layers.Flatten(input_shape=(inputs.shape[1], inputs.shape[2])),

@@ -5,7 +5,18 @@ import tensorflow.keras as keras
 
 
 DATA_PATH = "data.json"
-
+MAPPING = [
+        "blues",
+        "classical",
+        "country",
+        "disco",
+        "hiphop",
+        "jazz",
+        "metal",
+        "pop",
+        "reggae",
+        "rock"
+    ]
 
 def load_data(data_path):
     """Loads training dataset from json file
@@ -72,6 +83,21 @@ def build_model(input_shape):
 
     return model
 
+
+def predict(model, X, y):
+
+    X = X[np.newaxis, ...]
+
+    # prediction = [ [0.1, 0.2, ...] ]
+    prediction = model.predict(X) # X -> (1, 130, 13, 1)
+
+    # extract index with max value
+    predicted_index = np.argmax(prediction, axis=1) # [3]
+    mapping = MAPPING
+    print("Expected genre: {}, Predicted genre: {}".format(mapping[int(y)], mapping[int(predicted_index)]))
+
+
+
 if __name__ == "__main__":
     # create train, validation, and test sets
     X_train, X_validation, X_test, y_train, y_validation, y_test = prepare_datasets(0.25, 0.2)
@@ -94,3 +120,6 @@ if __name__ == "__main__":
     print("Accuracy on test set is: {}".format(test_accuracy))
 
     # make prediction on a sample
+    X = X_test[100]
+    y = y_test[100]
+    predict(model, X, y)
